@@ -4,7 +4,7 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 from config.config import settings
-from config.models import BaseTimestampedModel
+from src.core.models import BaseTimestampedModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

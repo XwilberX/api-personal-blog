@@ -1,4 +1,4 @@
-from config.models import BaseTimestampedModel
+from src.core.models import BaseTimestampedModel
 
 from sqlalchemy import orm
 

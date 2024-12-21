@@ -4,7 +4,7 @@ import orjson
 from config.config import settings
 
 from config.database import get_connection
-from src.auth.services import create_user
+from src.auth.service import create_user
 from src.auth.schemas import RegisterUser, RegisterUserResponse
 
 router = SubRouter(__name__, prefix=f"{settings.api_prefix}/auth")

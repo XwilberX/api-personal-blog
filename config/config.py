@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     TURSO_AUTH_TOKEN: str
 
     # Applicaciones instaladas
-    INSTALLED_APPS: List[str] = ["src.auth"]
+    INSTALLED_APPS: List[str] = ["src.auth", "src.blogs"]
     MODEL_FILE_NAME: str = "models.py"
 
     # API
@@ -33,14 +33,16 @@ class Settings(BaseSettings):
     @property
     def TURSO_DATABASE_URI(self) -> str:
         return f"sqlite+{self.TURSO_DATABASE_URL}/?authToken={self.TURSO_AUTH_TOKEN}&secure=true"
-    
+
     @computed_field
     @property
     def api_prefix(self) -> str:
         return f"/api/{self.API_VERSION}"
 
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
 
 settings = get_settings()

@@ -1,7 +1,11 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+# Python imports
 from contextlib import contextmanager
 
+# Libraries imports
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+# Project imports
 from config.config import settings
 
 engine = create_engine(
@@ -10,11 +14,14 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 # Crear sesión de base de datos
 @contextmanager
 def get_connection():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
     finally:
         db.close()
