@@ -30,12 +30,13 @@ class SQLAlchemyRepository(Generic[ModelType]):
     def get_all(self) -> List[BaseTimestampedModel]:
         return self.session.query(self.model).all()
 
-    def update(self, entity: BaseTimestampedModel) -> BaseTimestampedModel:
-        self.session.add(entity)
+    def update(self, pk: uuid.UUID, entity: BaseTimestampedModel) -> BaseTimestampedModel:
+        entity.pk = pk
+        self.session.merge(entity)
         self.session.commit()
-        self.session.refresh(entity)
-        return entity
+        return self.get(pk)
 
     def delete(self, entity: BaseTimestampedModel) -> None:
         self.session.delete(entity)
         self.session.commit()
+        self.session.flush()

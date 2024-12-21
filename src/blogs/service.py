@@ -14,17 +14,26 @@ class BlogService:
     def __init__(self, session: Session):
         self.repository = BlogRepository(session)
 
-    def add(self, blog: Blog) -> Blog:
+    def add(self, blog: dict) -> Blog:
+        blog = Blog(**blog)
         return self.repository.add(blog)
     
-    def get(self, pk: uuid.UUID) -> Optional[Blog]:
+    def get(self, pk: str) -> Optional[Blog]:
+        pk = uuid.UUID(pk)
         return self.repository.get(pk)
     
     def get_all(self) -> list[Blog]:
-        return self.repository.get_all()
+        blogs = self.repository.get_all()
+        return [blog.as_dict_full for blog in blogs]
     
-    def update(self, blog: Blog) -> Blog:
-        return self.repository.update(blog)
+    def update(self, pk: str, blog: dict) -> Blog:
+        pk = uuid.UUID(pk)
+        blog = Blog(**blog)
+        blog = self.repository.update(pk, blog)
+        print(f"Blog updated: {blog.as_dict_full}")
+        return blog
     
-    def delete(self, blog: Blog) -> None:
+    def delete(self, pk: str) -> None:
+        pk = uuid.UUID(pk)
+        blog = self.repository.get(pk)
         return self.repository.delete(blog)

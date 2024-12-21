@@ -1,23 +1,30 @@
 # Python imports
 import uuid
-from datetime import datetime
 
 # Libraries imports
 from pydantic import BaseModel
-from robyn.types import JSONResponse
+from robyn.types import Body, JSONResponse
 
 
-class Blog(BaseModel):
-    pk: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
+class Blog(Body):
+    pk: str = uuid.UUID
+    created_at: str
+    updated_at: str
     title: str
     description: str
     content: str
 
 
-class BlogCreate(Blog):
-    pass
+class BlogCreate(Body):
+    title: str
+    description: str
+    content: str
+
+
+class BlogUpdate(Body):
+    title: str
+    description: str
+    content: str
 
 
 class BlogResponse(JSONResponse):
