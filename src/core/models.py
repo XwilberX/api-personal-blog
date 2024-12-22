@@ -34,3 +34,7 @@ class BaseTimestampedModel(orm.DeclarativeBase):
     @property
     def as_dict_full(self):
         return {c.key: getattr(self, c.key) for c in self.__table__.columns}
+
+    @property
+    def as_dict_full_str(self):
+        return {c.key: str(getattr(self, c.key)) for c in self.__table__.columns}

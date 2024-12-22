@@ -40,4 +40,3 @@ def register(request: Request, body: RegisterUser) -> RegisterUserResponse:
     return RegisterUserResponse(
         status="Success", status_code=200, data={"user": user.as_dict}
     )
-

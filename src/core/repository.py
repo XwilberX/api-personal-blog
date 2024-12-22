@@ -30,7 +30,9 @@ class SQLAlchemyRepository(Generic[ModelType]):
     def get_all(self) -> List[BaseTimestampedModel]:
         return self.session.query(self.model).all()
 
-    def update(self, pk: uuid.UUID, entity: BaseTimestampedModel) -> BaseTimestampedModel:
+    def update(
+        self, pk: uuid.UUID, entity: BaseTimestampedModel
+    ) -> BaseTimestampedModel:
         entity.pk = pk
         self.session.merge(entity)
         self.session.commit()

@@ -26,3 +26,21 @@ class User(BaseTimestampedModel):
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.middle_name} {self.last_name}"
+
+    @property
+    def as_dict_full(self) -> dict:
+        return {
+            c.key: getattr(self, c.key)
+            for c in self.__table__.columns
+            if c.key not in ("password")
+        }
+
+    @property
+    def as_dict_full_str(self) -> dict:
+        return "-".join(
+            [
+                str(getattr(self, c.key))
+                for c in self.__table__.columns
+                if c.key not in ("password")
+            ]
+        )
