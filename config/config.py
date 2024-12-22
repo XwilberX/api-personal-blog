@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     # API
     API_VERSION: str = "v0"
 
+    # JWT
+    JWT_SECRET: str
+    JWT_ALGORITHM: str = "HS256"
+
     @computed_field
     @property
     def TURSO_DATABASE_URI(self) -> str:

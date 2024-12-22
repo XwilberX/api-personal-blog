@@ -30,7 +30,6 @@ class BlogService:
         pk = uuid.UUID(pk)
         blog = Blog(**blog)
         blog = self.repository.update(pk, blog)
-        print(f"Blog updated: {blog.as_dict_full}")
         return blog
     
     def delete(self, pk: str) -> None:

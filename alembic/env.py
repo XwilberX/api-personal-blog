@@ -26,6 +26,7 @@ target_metadata = BaseTimestampedModel.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+
 def get_url():
     return settings.TURSO_DATABASE_URI
 
@@ -43,8 +44,13 @@ def run_migrations_offline() -> None:
 
     """
     url = get_url()
+    is_sqlite = url.startswith("sqlite")
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        compare_type=True,
+        render_as_batch=is_sqlite,
     )
 
     with context.begin_transaction():
@@ -66,9 +72,14 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
 
+    is_sqlite = get_url().startswith("sqlite")
+
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, compare_type=True
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            render_as_batch=is_sqlite,
         )
 
         with context.begin_transaction():

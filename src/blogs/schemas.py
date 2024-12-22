@@ -2,7 +2,6 @@
 import uuid
 
 # Libraries imports
-from pydantic import BaseModel
 from robyn.types import Body, JSONResponse
 
 
