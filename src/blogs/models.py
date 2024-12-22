@@ -24,3 +24,17 @@ class Blog(BaseTimestampedModel):
     )
 
     author: orm.Mapped["User"] = orm.relationship("User", back_populates="blogs")
+
+    def __repr__(self):
+        return f"<Blog {self.title}> - {self.author.username}"
+    
+    @property
+    def as_dict_full_author(self) -> dict:
+        return {
+            "blog": {
+                c.key: getattr(self, c.key)
+                for c in self.__table__.columns
+                if c.key not in ("author_id")
+            },
+            "author": self.author.as_dict_for_blog,
+        }

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 # Project imports
 from src.blogs.models import Blog
 from src.blogs.repository import BlogRepository
+from src.blogs.schemas import BlogFullAuthor
 
 
 class BlogService:
@@ -15,6 +16,8 @@ class BlogService:
         self.repository = BlogRepository(session)
 
     def add(self, blog: dict) -> Blog:
+        author = blog.pop("author")
+        blog["author_id"] = uuid.UUID(author["pk"])
         blog = Blog(**blog)
         return self.repository.add(blog)
 
@@ -25,6 +28,10 @@ class BlogService:
     def get_all(self) -> list[Blog]:
         blogs = self.repository.get_all()
         return [blog.as_dict_full for blog in blogs]
+    
+    def get_all_full_author(self) -> list[BlogFullAuthor]:
+        blogs = self.repository.get_all()
+        return [blog.as_dict_full_author for blog in blogs]
 
     def update(self, pk: str, blog: dict) -> Blog:
         pk = uuid.UUID(pk)

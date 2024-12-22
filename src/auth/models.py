@@ -57,3 +57,12 @@ class User(BaseTimestampedModel):
     @property
     def total_blogs(self) -> int:
         return len(self.blogs)
+    
+    @property
+    def as_dict_for_blog(self) -> dict:
+        return {
+            "pk": self.pk,
+            "username": self.username,
+            "email": self.email,
+            "name": self.full_name,
+        }

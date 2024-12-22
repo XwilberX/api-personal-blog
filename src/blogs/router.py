@@ -7,7 +7,13 @@ import orjson
 
 # Project imports
 from src.blogs.service import BlogService
-from src.blogs.schemas import BlogsResponse, BlogResponse, BlogCreate, BlogUpdate
+from src.blogs.schemas import (
+    BlogsResponse,
+    BlogResponse,
+    BlogCreate,
+    BlogUpdate,
+    BlogsFullAuthorResponse
+)
 from config.config import settings
 from config.database import get_connection
 from src.core.middleware.auth import AuthMiddleware
@@ -28,6 +34,21 @@ def get_all(request: Request) -> BlogsResponse:
         status="success", status_code=status_codes.HTTP_200_OK, data=blogs
     )
 
+
+@router.get(
+    "/all",
+    openapi_name="Get all blogs with author",
+    openapi_tags=["Blogs"],
+    auth_required=True,
+)
+def get_all_with_author(request: Request) -> BlogsFullAuthorResponse:
+    with get_connection() as db:
+        service = BlogService(db)
+        blogs = service.get_all_full_author()
+
+    return BlogsFullAuthorResponse(
+        status="success", status_code=status_codes.HTTP_200_OK, data=blogs
+    )
 
 @router.get(
     "/find/:pk",
@@ -63,7 +84,7 @@ def create(request: Request, body: BlogCreate) -> BlogResponse:
 
 
 @router.put(
-    "update/:pk", openapi_name="Update blog", openapi_tags=["Blogs"], auth_required=True
+    "/update/:pk", openapi_name="Update blog", openapi_tags=["Blogs"], auth_required=True
 )
 def update(request: Request, body: BlogUpdate) -> BlogResponse:
     pk = request.path_params["pk"]
@@ -80,7 +101,7 @@ def update(request: Request, body: BlogUpdate) -> BlogResponse:
 
 
 @router.delete(
-    "delete/:pk", openapi_name="Delete blog", openapi_tags=["Blogs"], auth_required=True
+    "/delete/:pk", openapi_name="Delete blog", openapi_tags=["Blogs"], auth_required=True
 )
 def delete(request: Request) -> None:
     pk = request.path_params["pk"]

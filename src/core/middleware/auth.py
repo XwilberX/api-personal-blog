@@ -2,6 +2,7 @@
 
 # Libraries imports
 from robyn.authentication import AuthenticationHandler
+from robyn.exceptions import HTTPException
 from robyn.robyn import Identity
 
 # Project imports
@@ -14,12 +15,15 @@ class AuthMiddleware(AuthenticationHandler):
     def authenticate(self, request):
         token = self.token_getter.get_token(request)
 
+        if not token:
+            raise HTTPException(status_code=401, detail="Token not found")
+
         try:
             payload = decode_access_token(token)
             id = payload["id"]
 
         except Exception:
-            return False
+            raise HTTPException(status_code=401, detail="Invalid token")
 
         with get_connection() as db:
             service = AuthUserService(db)

@@ -14,3 +14,6 @@ class BlogRepository(SQLAlchemyRepository[Blog]):
 
     def get_by_title(self, title: str) -> Blog:
         return self.session.query(Blog).filter(Blog.title == title).first()
+    
+    def get_all_with_author(self) -> list[Blog]:
+        return self.session.query(Blog).all()

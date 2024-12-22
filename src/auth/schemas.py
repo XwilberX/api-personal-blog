@@ -17,10 +17,28 @@ class LoginUser(Body):
     password: str
 
 
+class User(Body):
+    pk: str
+    created_at: str
+    updated_at: str
+    first_name: str
+    middle_name: str
+    last_name: str
+    username: str
+    email: str
+    is_admin: bool
+    picture_profile: str
+
+
+class UserToken(Body):
+    user: User
+    token: str
+
+
 class LoginUserResponse(JSONResponse):
     status: str
     status_code: int
-    data: dict
+    data: UserToken
 
 
 class RegisterUserResponse(JSONResponse):

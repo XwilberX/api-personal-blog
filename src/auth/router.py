@@ -26,7 +26,9 @@ def login(request: Request, body: LoginUser) -> LoginUserResponse:
         return LoginUserResponse(status="Unauthorized", status_code=401, data={})
 
     return LoginUserResponse(
-        status="Success", status_code=200, data={"user": user.as_dict, "token": token}
+        status="Success",
+        status_code=200,
+        data={"user": user.as_dict_full, "token": token},
     )
 
 
