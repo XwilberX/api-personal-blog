@@ -1,10 +1,15 @@
 # Python imports
+from typing import TYPE_CHECKING
 
 # Libraries imports
-from sqlalchemy import orm
+from sqlalchemy import orm, ForeignKey
+from sqlalchemy.dialects.sqlite import TEXT
 
 # Project imports
 from src.core.models import BaseTimestampedModel
+
+if TYPE_CHECKING:
+    from src.auth.models import User
 
 
 class Blog(BaseTimestampedModel):
@@ -13,4 +18,9 @@ class Blog(BaseTimestampedModel):
 
     title: orm.Mapped[str] = orm.mapped_column(nullable=False)
     description: orm.Mapped[str] = orm.mapped_column(nullable=False)
-    content: orm.Mapped[str] = orm.mapped_column(nullable=False)
+    content: orm.Mapped[str] = orm.mapped_column(nullable=False, type_=TEXT)
+    author_id: orm.Mapped[str] = orm.mapped_column(
+        ForeignKey("users.pk"), nullable=False
+    )
+
+    author: orm.Mapped["User"] = orm.relationship("User", back_populates="blogs")
