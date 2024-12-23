@@ -1,4 +1,4 @@
-name: Flujo de trabajo manual
+name: Manual Workflow
 
 on:
   workflow_dispatch:
@@ -7,15 +7,17 @@ jobs:
   ssh_command:
     name: Run SSH command
     runs-on: ubuntu-latest
+    env:
+      SSH_PROXY_COMMAND: /tmp/cloudflared/cloudflared access ssh --id ${{ secrets.CF_SERVICE_TOKEN_ID }} --secret ${{ secrets.CF_SERVICE_TOKEN_SECRET }} --hostname %h
     steps:
-      - name: Connect and run command on remote server
-        uses: and-fm/cloudflared-ssh-action@v3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
-          private_key_value: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
-          port: ${{ secrets.SSH_PORT }}
-          service_token_id: ${{ secrets.CF_SERVICE_TOKEN_ID }}
-          service_token_secret: ${{ secrets.CF_SERVICE_TOKEN_SECRET }}
-          commands: mkdir hello-world -v
+      - name: Install cloudflared
+        run: |
+          latest_version=$(curl -s https://api.github.com/repos/cloudflare/cloudflared/releases/latest | jq -r '.tag_name')
+          mkdir -p /tmp/cloudflared
+          curl -sL -o /tmp/cloudflared/cloudflared https://github.com/cloudflare/cloudflared/releases/download/$latest_version/cloudflared-linux-amd64
+          chmod +x /tmp/cloudflared/cloudflared
+          /tmp/cloudflared/cloudflared --version
+
+      - name: Run SSH command
+        run: |
+          ssh -o StrictHostKeyChecking=no -o ProxyCommand="$SSH_PROXY_COMMAND" ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir hello-world -v"
