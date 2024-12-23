@@ -23,8 +23,8 @@ jobs:
         name: id_ed25519
         known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
         config: |
-          Host host ${{ secrets.SSH_HOST }}
-            ProxyCommand /usr/local/bin/cloudflared access ssh --hostname %h --id ${{ secrets.CF_SERVICE_TOKEN_ID }} --secret ${{ secrets.CF_SERVICE_TOKEN_SECRET }}
+          Match host ssh.ionhack.ink
+            ProxyCommand /opt/homebrew/bin/cloudflared access ssh --hostname %h --id 3d7684f639e5a625112b61636ef568c7.access --secret 196a7fb6f704c80c63bb0099f4ddf20c48c1a1de697b04f0bd281a831027adc3
             IdentityFile ~/.ssh/id_ed25519
             UserKnownHostsFile /dev/null
             StrictHostKeyChecking no
