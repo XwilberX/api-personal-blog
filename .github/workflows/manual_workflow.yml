@@ -4,30 +4,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  ssh_command:
+    name: Run SSH command
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: install cloudflared
-      run: |
-        curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-        sudo dpkg -i cloudflared.deb
-
-    - name: Configure SSH
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        name: id_ed25519
-        known_hosts: "ssh.ionhack.ink ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIANe5QGtX2nRFWVg/BQAjBWimsUz9fIOVAfh/EjrpZrj"
-        config: |
-          Match host ssh.ionhack.ink
-            ProxyCommand /opt/homebrew/bin/cloudflared access ssh --hostname ssh.ionhack.ink --id 3d7684f639e5a625112b61636ef568c7.access --secret 196a7fb6f704c80c63bb0099f4ddf20c48c1a1de697b04f0bd281a831027adc3
-            IdentityFile ~/.ssh/id_ed25519
-            UserKnownHostsFile /dev/null
-            StrictHostKeyChecking no
-
-    - name: SSH into server
-      run: ssh -vvv rp-juana@ssh.ionhack.ink 'mkdir hello'
+      - name: Connect and run command on remote server
+        uses: and-fm/cloudflared-ssh-action@v3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+          private_key_value: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+          port: ${{ secrets.SSH_PORT }}
+          service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
+          service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
+          commands: mkdir hello-world -v
