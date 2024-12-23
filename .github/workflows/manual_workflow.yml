@@ -30,4 +30,4 @@ jobs:
             StrictHostKeyChecking no
 
     - name: SSH into server
-      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'mkdir -p hello-world'
+      run: ssh -vvv ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'mkdir -p hello-world'
