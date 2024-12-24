@@ -14,10 +14,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # App
-    APP_PORT: int = 8080
-    APP_HOST: str = "0.0.0.0"
-
     # Turso
     TURSO_DATABASE_URL: str
     TURSO_AUTH_TOKEN: str

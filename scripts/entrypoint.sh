@@ -4,7 +4,7 @@
 set -euxo pipefail
 
 # Correr migraciones
-alembic upgrade head
+python -m alembic upgrade head
 
 # Iniciar servidor
 python main.py --processes=2 --workers=2
