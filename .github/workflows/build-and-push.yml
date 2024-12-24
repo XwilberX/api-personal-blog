@@ -43,5 +43,5 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
-            ghcr.io/${{ steps.repo.outputs.repo }}:${{ steps.tag.outputs.tag }}
-            ghcr.io/${{ steps.repo.outputs.repo }}:latest
+            ghcr.io/${{ env.repo }}/api-blog:${{ env.tag }}
+            ghcr.io/${{ env.repo }}/api-blog:latest
