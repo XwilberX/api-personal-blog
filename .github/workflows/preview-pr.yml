@@ -52,20 +52,18 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
         
-        # Esperar conexión SSH
         echo "Esperando disponibilidad SSH..."
         timeout 120 bash -c 'until nc -zv ${{ env.INSTANCE_IP }} 22; do sleep 5; done' || exit 1
         
-        # Configurar known_hosts
         ssh-keyscan ${{ env.INSTANCE_IP }} >> ~/.ssh/known_hosts
         
         ssh -i ~/.ssh/id_ed25519 root@${{ env.INSTANCE_IP }} << 'EOSSH'
         set -e
         export DEBIAN_FRONTEND=noninteractive
         
-        # Actualizar sistema
+        # Instalar dependencias base incluyendo curl
         apt-get update -qq
-        apt-get install -qqy git python3 python3-venv
+        apt-get install -qqy git python3 python3-venv curl ca-certificates
         
         # Clonar repositorio
         [ ! -d /app ] && git clone https://github.com/${{ github.repository }}.git /app
@@ -73,11 +71,12 @@ jobs:
         git fetch origin ${{ github.event.pull_request.head.ref }}
         git checkout ${{ github.event.pull_request.head.ref }} -f
         
-        # Instalar uv
+        # Instalar uv y configurar PATH
         curl -LsSf https://astral.sh/uv/install.sh | sh -s -- -q
-        export PATH="$HOME/.cargo/bin:$PATH"
+        echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+        source ~/.bashrc
         
-        # Configurar entorno
+        # Configurar entorno y dependencias
         JWT_SECRET=$(openssl rand -hex 32)
         cat > .env <<EOF
         TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
@@ -87,15 +86,14 @@ jobs:
         JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
         EOF
         
-        # Instalar dependencias
-        uv sync --quiet
-        uv venv -q
+        # Usar ruta absoluta para uv inicialmente
+        $HOME/.cargo/bin/uv sync --quiet
+        $HOME/.cargo/bin/uv venv -q
         
         # Migraciones
         source .venv/bin/activate
         uv run python -m alembic upgrade head
         
-        # Reiniciar servicio
         pkill python || true
         nohup uv run python main.py > log.txt 2>&1 &
         EOSSH
