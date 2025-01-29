@@ -54,7 +54,7 @@ jobs:
 
       - name: Run project localhost
         run: |
-          nohup python main.py > server.log 2>&1 &
+          nohup uv run python main.py > server.log 2>&1 &
           sleep 5  # Esperar a que el servidor esté listo
       
       - name: Health check

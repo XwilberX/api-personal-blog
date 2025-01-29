@@ -34,7 +34,7 @@ jobs:
     - name: Create DNS Record Cloudflare for Api
       run: |
         curl https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE }}/dns_records \
-            H 'Content-Type: application/json' \
+            -H 'Content-Type: application/json' \
             -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_TOKEN }}" \
             -d '{
             "comment": "Create DNS Record for API",
