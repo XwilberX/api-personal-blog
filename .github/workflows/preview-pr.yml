@@ -61,9 +61,9 @@ jobs:
         set -e
         export DEBIAN_FRONTEND=noninteractive
         
-        # Instalar dependencias base incluyendo curl
+        # Instalar dependencias base
         apt-get update -qq
-        apt-get install -qqy git python3 python3-venv curl ca-certificates
+        apt-get install -qqy git python3 python3-venv curl
         
         # Clonar repositorio
         [ ! -d /app ] && git clone https://github.com/${{ github.repository }}.git /app
@@ -71,12 +71,10 @@ jobs:
         git fetch origin ${{ github.event.pull_request.head.ref }}
         git checkout ${{ github.event.pull_request.head.ref }} -f
         
-        # Instalar uv y configurar PATH
-        curl -LsSf https://astral.sh/uv/install.sh | sh -s -- -q
-        echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
-        source ~/.bashrc
+        # Instalar uv con pip
+        python3 -m pip install uv
         
-        # Configurar entorno y dependencias
+        # Configurar entorno
         JWT_SECRET=$(openssl rand -hex 32)
         cat > .env <<EOF
         TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
@@ -86,16 +84,53 @@ jobs:
         JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
         EOF
         
-        # Usar ruta absoluta para uv inicialmente
-        $HOME/.cargo/bin/uv sync --quiet
-        $HOME/.cargo/bin/uv venv -q
+        # Instalar dependencias
+        uv venv
+        source .venv/bin/activate
+        uv pip install -r requirements.txt
         
         # Migraciones
-        source .venv/bin/activate
-        uv run python -m alembic upgrade head
+        python -m alembic upgrade head
         
+        # Reiniciar aplicación
         pkill python || true
-        nohup uv run python main.py > log.txt 2>&1 &
+        nohup python main.py > log.txt 2>&1 &
+        EOSSH
+
+    - name: Configure Nginx Proxy
+      run: |
+        ssh -i ~/.ssh/id_ed25519 root@${{ env.INSTANCE_IP }} << 'EOSSH'
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        
+        # Instalar Nginx
+        apt-get install -qqy nginx
+        
+        # Configurar proxy reverso
+        cat > /etc/nginx/sites-available/preview <<EOF
+        server {
+            listen 80;
+            server_name pr-${{ github.event.number }}.ionhack.ink;
+            
+            location / {
+                proxy_pass http://localhost:8080;
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            }
+        }
+        EOF
+        
+        # Habilitar configuración
+        ln -sf /etc/nginx/sites-available/preview /etc/nginx/sites-enabled/
+        rm -f /etc/nginx/sites-enabled/default
+        
+        # Ajustes de firewall
+        ufw allow 80/tcp
+        ufw --force enable
+        
+        # Reiniciar Nginx
+        systemctl restart nginx
         EOSSH
 
     - name: Add Preview Comment
