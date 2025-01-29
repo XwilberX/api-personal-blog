@@ -48,7 +48,13 @@ jobs:
 
     - name: Setup Python Environment
       run: |
-        ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} root@${{ env.INSTANCE_IP }} << 'EOF'
+        # Crear directorio .ssh y guardar la clave privada
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+        # Conectar al servidor
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 root@${{ env.INSTANCE_IP }} << 'EOF'
         # Clona el repositorio
         git clone https://github.com/${{ github.repository }}.git /app
         cd /app
