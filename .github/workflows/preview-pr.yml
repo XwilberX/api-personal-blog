@@ -63,7 +63,15 @@ jobs:
         
         # Instalar dependencias base
         apt-get update -qq
-        apt-get install -qqy git python3 python3-venv curl
+        apt-get install -qqy git python3 python3-venv python3-pip curl
+        
+        # Instalar pipx usando pip
+        python3 -m pip install --user pipx
+        python3 -m pipx ensurepath
+        
+        # Configurar PATH
+        echo 'export PATH="$PATH:/root/.local/bin"' >> ~/.bashrc
+        source ~/.bashrc
         
         # Clonar repositorio
         [ ! -d /app ] && git clone https://github.com/${{ github.repository }}.git /app
@@ -71,14 +79,8 @@ jobs:
         git fetch origin ${{ github.event.pull_request.head.ref }}
         git checkout ${{ github.event.pull_request.head.ref }} -f
         
-        # Instalar pipx
-        apt-get install -qqy pipx
-        pipx ensurepath
-
-        # Instalar uv con pipx
+        # Instalar uv usando pipx
         pipx install uv
-        echo 'export PATH="$PATH:/root/.local/bin"' >> ~/.bashrc
-        source ~/.bashrc
         uv version
         
         # Configurar entorno
@@ -90,6 +92,9 @@ jobs:
         JWT_SECRET=$JWT_SECRET
         JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
         EOF
+
+        # Activar entorno virtual
+        source .venv/bin/activate
         
         # Instalar dependencias
         uv sync
@@ -97,9 +102,9 @@ jobs:
         # Migraciones
         uv run python -m alembic upgrade head
         
-        # Reiniciar aplicación
+        # Iniciar aplicación
         pkill python || true
-        nohup un run python main.py > log.txt 2>&1 &
+        nohup uv run python main.py > log.txt 2>&1 &
         EOSSH
 
     - name: Configure Nginx Proxy
