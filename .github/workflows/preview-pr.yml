@@ -68,7 +68,6 @@ jobs:
         
         # Instalar uv con script oficial
         curl -LsSf https://astral.sh/uv/install.sh | sh
-        source "$HOME/.local/bin/uv"
         
         # Clonar repositorio
         [ ! -d /app ] && git clone https://github.com/${{ github.repository }}.git /app
