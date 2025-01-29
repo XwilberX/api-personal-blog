@@ -12,6 +12,7 @@ authors = [
 
 dependencies = [
     "alembic>=1.14.0",
+    "niquests>=3.12.3",
     "pwdlib[argon2]>=0.2.1",
     "pydantic-settings>=2.7.0",
     "pyjwt>=2.10.1",
@@ -23,4 +24,8 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pre-commit>=4.1.0",
+    "pytest>=8.3.4",
 ]
+
+#[tool.pytest.ini_options]
+#env_files = [".env.test"]

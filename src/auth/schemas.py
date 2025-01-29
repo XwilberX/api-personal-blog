@@ -45,3 +45,9 @@ class RegisterUserResponse(JSONResponse):
     status: str
     status_code: int
     data: dict
+
+
+class UsersResponse(JSONResponse):
+    status: str
+    status_code: int
+    data: list[User]

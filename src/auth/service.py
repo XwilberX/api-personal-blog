@@ -26,7 +26,9 @@ class AuthUserService:
         # encrypt password
         user.password = hash_password(user.password)
 
-        return self.repository.add(user)
+        user_created = self.repository.add(user)
+
+        return user_created
 
     def get(self, pk: str) -> User:
         pk = uuid.UUID(pk)
