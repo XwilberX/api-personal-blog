@@ -1,6 +1,5 @@
 # Python imports
 import uuid
-from typing import List
 
 # Libraries imports
 from robyn.types import Body, JSONResponse

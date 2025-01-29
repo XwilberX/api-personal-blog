@@ -4,6 +4,12 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
+
+authors = [
+    {name = "Wilber Alegria", email = "wilber.alegria99@gmail.com"},
+]
+    
+
 dependencies = [
     "alembic>=1.14.0",
     "pwdlib[argon2]>=0.2.1",
@@ -12,4 +18,9 @@ dependencies = [
     "robyn>=0.64.2",
     "ruff>=0.8.3",
     "sqlalchemy-libsql>=0.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.1.0",
 ]

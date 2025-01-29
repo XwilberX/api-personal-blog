@@ -12,7 +12,7 @@ from src.blogs.schemas import (
     BlogResponse,
     BlogCreate,
     BlogUpdate,
-    BlogsFullAuthorResponse
+    BlogsFullAuthorResponse,
 )
 from config.config import settings
 from config.database import get_connection
@@ -50,6 +50,7 @@ def get_all_with_author(request: Request) -> BlogsFullAuthorResponse:
         status="success", status_code=status_codes.HTTP_200_OK, data=blogs
     )
 
+
 @router.get(
     "/find/:pk",
     openapi_name="Get blog by pk",
@@ -84,7 +85,10 @@ def create(request: Request, body: BlogCreate) -> BlogResponse:
 
 
 @router.put(
-    "/update/:pk", openapi_name="Update blog", openapi_tags=["Blogs"], auth_required=True
+    "/update/:pk",
+    openapi_name="Update blog",
+    openapi_tags=["Blogs"],
+    auth_required=True,
 )
 def update(request: Request, body: BlogUpdate) -> BlogResponse:
     pk = request.path_params["pk"]
@@ -101,12 +105,15 @@ def update(request: Request, body: BlogUpdate) -> BlogResponse:
 
 
 @router.delete(
-    "/delete/:pk", openapi_name="Delete blog", openapi_tags=["Blogs"], auth_required=True
+    "/delete/:pk",
+    openapi_name="Delete blog",
+    openapi_tags=["Blogs"],
+    auth_required=True,
 )
 def delete(request: Request) -> None:
     pk = request.path_params["pk"]
     with get_connection() as db:
         service = BlogService(db)
-        _ = service.delete(pk)
+        service.delete(pk)
 
     return None

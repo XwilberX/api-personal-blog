@@ -45,7 +45,7 @@ class User(BaseTimestampedModel):
         }
 
     @property
-    def as_dict_full_str(self) -> dict:
+    def as_dict_full_str(self) -> str:
         return "-".join(
             [
                 str(getattr(self, c.key))
@@ -57,7 +57,7 @@ class User(BaseTimestampedModel):
     @property
     def total_blogs(self) -> int:
         return len(self.blogs)
-    
+
     @property
     def as_dict_for_blog(self) -> dict:
         return {

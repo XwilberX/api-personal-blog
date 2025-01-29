@@ -28,7 +28,7 @@ class BlogService:
     def get_all(self) -> list[Blog]:
         blogs = self.repository.get_all()
         return [blog.as_dict_full for blog in blogs]
-    
+
     def get_all_full_author(self) -> list[BlogFullAuthor]:
         blogs = self.repository.get_all()
         return [blog.as_dict_full_author for blog in blogs]
