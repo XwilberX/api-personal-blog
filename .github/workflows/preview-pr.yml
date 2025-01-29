@@ -74,12 +74,12 @@ jobs:
         # Instalar pipx
         apt-get install -qqy pipx
         pipx ensurepath
-        echo 'export PATH="$PATH:/root/.local/bin"' >> ~/.bashrc
-        source ~/.bashrc
 
         # Instalar uv con pipx
         pipx install uv
         uv version
+        echo 'export PATH="$PATH:/root/.local/bin"' >> ~/.bashrc
+        source ~/.bashrc
         
         # Configurar entorno
         JWT_SECRET=$(openssl rand -hex 32)
