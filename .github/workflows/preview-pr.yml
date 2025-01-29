@@ -18,7 +18,7 @@ jobs:
       env:
         HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
       with:
-        args: server create --location=ash --image=ubuntu-22.04 --type=cpx11 --name=pr-${{ github.event.number }}-preview
+        args: server create --location=ash --image=ubuntu-22.04 --type=cpx11 --name=pr-${{ github.event.number }}-preview --ssh-key ${{ secrets.HCLOUD_SSH_KEY_ID }}
 
     - name: Get Server IP
       uses: jawher/action-hcloud@v1.50.0
@@ -48,7 +48,7 @@ jobs:
 
     - name: Setup Python Environment
       run: |
-        ssh -o StrictHostKeyChecking=no root@${{ env.INSTANCE_IP }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} root@${{ env.INSTANCE_IP }} << 'EOF'
         # Clona el repositorio
         git clone https://github.com/${{ github.repository }}.git /app
         cd /app

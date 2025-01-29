@@ -26,11 +26,18 @@ jobs:
       - run: ruff check --fix
       - run: ruff format
 
-      # si no hay errores, se puede hacer un commit
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        if: success()
-        with:
-          commit_message: "Apply Ruff fixes"
-          commit_user_name: "Ruff Bot"
-          commit_author: Author ${{ github.actor }}
+      - name: Commit and push changes
+        if: success()  # Solo si los pasos anteriores son exitosos
+        run: |
+          # Configura usuario de Git
+          git config --global user.name "Ruff Bot"
+          git config --global user.email "actions@github.com"
+
+          # Verifica si hay cambios para commitear
+          if [[ -n $(git status --porcelain) ]]; then
+            git add .
+            git commit -m "Apply Ruff fixes"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          else
+            echo "No hay cambios para commitear."
+          fi
