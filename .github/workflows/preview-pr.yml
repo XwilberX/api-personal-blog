@@ -63,11 +63,9 @@ jobs:
         
         # Instalar dependencias base
         apt-get update -qq
-        apt-get install -qqy git python3 python3-venv python3-pip curl
+        apt-get install -qqy git curl python3 python3-venv 
         
-        # Instalar pipx usando pip
-        python3 -m pip install --user pipx
-        python3 -m pipx ensurepath
+        curl -LsSf https://astral.sh/uv/install.sh | sh
         
         # Configurar PATH
         echo 'export PATH="$PATH:/root/.local/bin"' >> ~/.bashrc
@@ -79,10 +77,6 @@ jobs:
         git fetch origin ${{ github.event.pull_request.head.ref }}
         git checkout ${{ github.event.pull_request.head.ref }} -f
         
-        # Instalar uv usando pipx
-        pipx install uv
-        uv version
-        
         # Configurar entorno
         JWT_SECRET=$(openssl rand -hex 32)
         cat > .env <<EOF
@@ -92,6 +86,9 @@ jobs:
         JWT_SECRET=$JWT_SECRET
         JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
         EOF
+
+        # Version uv
+        uv version
 
         # Activar entorno virtual
         source .venv/bin/activate
