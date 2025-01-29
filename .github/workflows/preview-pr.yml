@@ -46,46 +46,85 @@ jobs:
             "proxied": true
             }'
 
-    - name: Setup Python Environment
-      run: |
-        # Crear directorio .ssh y guardar la clave privada
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-        chmod 600 ~/.ssh/id_ed25519
+    # - name: Setup Python Environment
+    #   run: |
+    #     # Crear directorio .ssh y guardar la clave privada
+    #     mkdir -p ~/.ssh
+    #     echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+    #     chmod 600 ~/.ssh/id_ed25519
 
-        # Conectar al servidor
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 root@${{ env.INSTANCE_IP }} << 'EOF'
-        # Clona el repositorio
-        git clone https://github.com/${{ github.repository }}.git /app
-        cd /app
-        git checkout ${{ github.event.pull_request.head.ref }}
+    #     # Conectar al servidor
+    #     ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 root@${{ env.INSTANCE_IP }} << 'EOF'
+    #     # Clona el repositorio
+    #     git clone https://github.com/${{ github.repository }}.git /app
+    #     cd /app
+    #     git checkout ${{ github.event.pull_request.head.ref }}
         
-        # Instalar uv
-        apt-get update
-        curl -LsSf https://astral.sh/uv/install.sh | sh
+    #     # Instalar uv
+    #     apt-get update
+    #     curl -LsSf https://astral.sh/uv/install.sh | sh
 
-        # Crear y configurar .env
-        JWT_SECRET=$(openssl rand -hex 32)
-        cat > .env <<EOL
-        TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
-        TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
-        API_VERSION=${{ secrets.API_VERSION }}
-        JWT_SECRET=$JWT_SECRET
-        JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
-        EOL
+    #     # Crear y configurar .env
+    #     JWT_SECRET=$(openssl rand -hex 32)
+    #     cat > .env <<EOL
+    #     TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
+    #     TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
+    #     API_VERSION=${{ secrets.API_VERSION }}
+    #     JWT_SECRET=$JWT_SECRET
+    #     JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
+    #     EOL
 
-        # Instalar dependencias
-        uv sync
+    #     # Instalar dependencias
+    #     uv sync
 
-        # Activar entorno virtual
-        source .venv/bin/activate
+    #     # Activar entorno virtual
+    #     source .venv/bin/activate
 
-        # Correr migraciones
-        python -m alembic upgrade head
+    #     # Correr migraciones
+    #     python -m alembic upgrade head
 
-        # Iniciar servidor
-        nohup python main.py > log.txt 2>&1 &
-        EOF
+    #     # Iniciar servidor
+    #     nohup python main.py > log.txt 2>&1 &
+    #     EOF
+
+    - name: Setup Python Environment
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ env.INSTANCE_IP }}
+        username: root
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          # Clona el repositorio
+          git clone https://github.com/${{ github.repository }}.git /app
+          cd /app
+          git checkout ${{ github.event.pull_request.head.ref }}
+            
+          # Instalar uv
+          apt-get update
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+          # Crear y configurar .env
+          JWT_SECRET=$(openssl rand -hex 32)
+          cat > .env <<EOL
+            TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
+            TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
+            API_VERSION=${{ secrets.API_VERSION }}
+            JWT_SECRET=$JWT_SECRET
+            JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
+          EOL
+
+          # Instalar dependencias
+          uv sync
+
+          # Activar entorno virtual
+          source .venv/bin/activate
+
+          # Correr migraciones
+          python -m alembic upgrade head
+
+          # Iniciar servidor
+          nohup python main.py > log.txt 2>&1 &
+          EOF 
 
     - name: Add Preview Comment
       uses: actions/github-script@v6
