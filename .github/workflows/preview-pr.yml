@@ -77,9 +77,9 @@ jobs:
 
         # Instalar uv con pipx
         pipx install uv
-        uv version
         echo 'export PATH="$PATH:/root/.local/bin"' >> ~/.bashrc
         source ~/.bashrc
+        uv version
         
         # Configurar entorno
         JWT_SECRET=$(openssl rand -hex 32)
