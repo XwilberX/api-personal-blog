@@ -63,7 +63,10 @@ jobs:
         
         # Instalar dependencias base
         apt-get update -qq
-        apt-get install -qqy git python3 python3-venv curl
+        apt-get install -qqy git python3 python3-venv python3-pip curl
+
+        # Asegurar pip actualizado
+        python3 -m ensurepip --upgrade
         
         # Clonar repositorio
         [ ! -d /app ] && git clone https://github.com/${{ github.repository }}.git /app
@@ -72,7 +75,7 @@ jobs:
         git checkout ${{ github.event.pull_request.head.ref }} -f
         
         # Instalar uv con pip
-        python3 -m pip install uv
+        python3 -m pip install --user uv
         
         # Configurar entorno
         JWT_SECRET=$(openssl rand -hex 32)
@@ -90,11 +93,11 @@ jobs:
         uv pip install -r requirements.txt
         
         # Migraciones
-        python -m alembic upgrade head
+        uv run python -m alembic upgrade head
         
         # Reiniciar aplicación
         pkill python || true
-        nohup python main.py > log.txt 2>&1 &
+        nohup un run python main.py > log.txt 2>&1 &
         EOSSH
 
     - name: Configure Nginx Proxy
