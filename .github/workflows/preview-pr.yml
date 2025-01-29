@@ -106,10 +106,11 @@ jobs:
         set -e
         export DEBIAN_FRONTEND=noninteractive
         
-        # Instalar Nginx
+        # 1. Instalar y configurar Nginx
         apt-get install -qqy nginx
+        ufw allow 'Nginx Full'
         
-        # Configurar proxy reverso
+        # 2. Crear configuración de proxy dinámico
         cat > /etc/nginx/sites-available/preview <<EOF
         server {
             listen 80;
@@ -120,20 +121,24 @@ jobs:
                 proxy_set_header Host \$host;
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
             }
         }
         EOF
         
-        # Habilitar configuración
+        # 3. Validar y aplicar configuración
         ln -sf /etc/nginx/sites-available/preview /etc/nginx/sites-enabled/
         rm -f /etc/nginx/sites-enabled/default
-        
-        # Ajustes de firewall
-        ufw allow 80/tcp
-        ufw --force enable
-        
-        # Reiniciar Nginx
+        nginx -t
         systemctl restart nginx
+        
+        # 4. Verificar resolución DNS local
+        echo "Verificando DNS local:"
+        grep pr-${{ github.event.number }}.ionhack.ink /etc/hosts || echo "$(hostname -I | awk '{print \$1}') pr-${{ github.event.number }}.ionhack.ink" >> /etc/hosts
+        
+        # 5. Test de conectividad
+        echo "Resultado curl local:"
+        curl -H "Host: pr-${{ github.event.number }}.ionhack.ink" http://localhost || true
         EOSSH
 
     - name: Add Preview Comment
