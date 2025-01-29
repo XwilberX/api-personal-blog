@@ -31,16 +31,19 @@ jobs:
         IP=$(jq -r '.public_net.ipv4.ip' hcloud.output)
         echo "INSTANCE_IP=$IP" >> $GITHUB_ENV
 
-    - name: Create DNS Record
-      uses: rez0n/create-dns-record@v2.1
-      with:
-        type: "A"
-        name: "pr-${{ github.event.number }}.ionhack.ink"
-        content: ${{ env.INSTANCE_IP }}
-        ttl: 1
-        proxied: true
-        token: ${{ secrets.CLOUDFLARE_TOKEN }}
-        zone: ${{ secrets.CLOUDFLARE_ZONE }}
+    - name: Create DNS Record Cloudflare for Api
+      run: |
+        curl https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE }}/dns_records \
+            H 'Content-Type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_TOKEN }}" \
+            -d '{
+            "comment": "Create DNS Record for API",
+            "type": "A",
+            "name": "pr-${{ github.event.number }}.ionhack.ink",
+            "content": "${{ env.INSTANCE_IP }}",
+            "ttl": 120,
+            "proxied": true
+            }'
 
     - name: Setup Python Environment
       run: |
