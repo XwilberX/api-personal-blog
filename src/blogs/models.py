@@ -27,7 +27,7 @@ class Blog(BaseTimestampedModel):
 
     def __repr__(self):
         return f"<Blog {self.title}> - {self.author.username}"
-    
+
     @property
     def as_dict_full_author(self) -> dict:
         return {
