@@ -1,5 +1,6 @@
 import niquests
 from pprint import pp
+from faker import Faker
 
 from config.config import get_settings
 
@@ -27,12 +28,12 @@ def test_auth_login(base_url):
 
 def test_auth_register(base_url):
     body = {
-        "first_name": "Wilber",
-        "middle_name": "Alexander",
-        "last_name": "Alegria",
-        "username": "wilberalegria",
-        "email": "wilberalegria@mail.com",
-        "password": "123456",
+        "first_name": Faker().first_name(),
+        "middle_name": Faker().last_name(),
+        "last_name": Faker().last_name(),
+        "username": Faker().user_name(),
+        "email": Faker().email(),
+        "password": Faker().password(),
     }
 
     response = niquests.post(

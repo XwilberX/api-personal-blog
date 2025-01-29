@@ -1,0 +1,171 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create Hetzner Instance
+      uses: jawher/action-hcloud@v1.50.0
+      id: create-server
+      env:
+        HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+      with:
+        args: server create --location=ash --image=ubuntu-22.04 --type=cpx11 --name=pr-${{ github.event.number }}-preview --ssh-key ${{ secrets.HCLOUD_SSH_KEY_ID }}
+
+    - name: Get Server IP
+      uses: jawher/action-hcloud@v1.50.0
+      id: get-ip
+      env:
+        HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+      with:
+        args: server describe pr-${{ github.event.number }}-preview -o=json
+    - run: |
+        IP=$(jq -r '.public_net.ipv4.ip' hcloud.output)
+        echo "INSTANCE_IP=$IP" >> $GITHUB_ENV
+
+    - name: Create DNS Record Cloudflare for Api
+      run: |
+        curl -X POST https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE }}/dns_records \
+            -H 'Content-Type: application/json' \
+            -H "X-Auth-Email: ${{ secrets.CLOUDFLARE_EMAIL }}" \
+            -H "X-Auth-Key: ${{ secrets.CLOUDFLARE_TOKEN }}" \
+            -d '{
+            "comment": "Create DNS Record for API",
+            "type": "A",
+            "name": "pr-${{ github.event.number }}.ionhack.ink",
+            "content": "${{ env.INSTANCE_IP }}",
+            "ttl": 120,
+            "proxied": true
+            }'
+
+    - name: Setup Python Environment
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        
+        echo "Esperando disponibilidad SSH..."
+        timeout 120 bash -c 'until nc -zv ${{ env.INSTANCE_IP }} 22; do sleep 5; done' || exit 1
+        
+        ssh-keyscan ${{ env.INSTANCE_IP }} >> ~/.ssh/known_hosts
+        
+        ssh -i ~/.ssh/id_ed25519 root@${{ env.INSTANCE_IP }} << 'EOSSH'
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        export PATH="$PATH:/root/.cargo/bin"
+        
+        # Instalar dependencias
+        apt-get update -qq
+        apt-get install -qqy git curl python3 python3-venv
+        
+        # Instalar uv con script oficial
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        
+        # Clonar repositorio
+        [ ! -d /app ] && git clone https://github.com/${{ github.repository }}.git /app
+        cd /app
+        git fetch origin ${{ github.event.pull_request.head.ref }}
+        git checkout ${{ github.event.pull_request.head.ref }} -f
+        
+        # Configurar entorno
+        JWT_SECRET=$(openssl rand -hex 32)
+        cat > .env <<EOF
+        TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
+        TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
+        API_VERSION=${{ secrets.API_VERSION }}
+        JWT_SECRET=$JWT_SECRET
+        JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
+        EOF
+
+        # uv version
+        /root/.local/bin/uv --version
+
+        # Usar ruta absoluta para uv
+        /root/.local/bin/uv sync
+        
+        # Migraciones
+        source .venv/bin/activate
+        /root/.local/bin/uv run python -m alembic upgrade head
+        
+        # Iniciar aplicación
+        pkill python || true
+        nohup /root/.local/bin/uv run python main.py > log.txt 2>&1 &
+        EOSSH
+
+    - name: Configure Nginx Proxy
+      run: |
+        ssh -i ~/.ssh/id_ed25519 root@${{ env.INSTANCE_IP }} << 'EOSSH'
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        
+        # 1. Instalar y configurar Nginx
+        apt-get install -qqy nginx
+        ufw allow 'Nginx Full'
+        
+        # 2. Crear configuración de proxy dinámico
+        cat > /etc/nginx/sites-available/preview <<EOF
+        server {
+            listen 80;
+            server_name pr-${{ github.event.number }}.ionhack.ink;
+            
+            location / {
+                proxy_pass http://localhost:8080;
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
+            }
+        }
+        EOF
+        
+        # 3. Validar y aplicar configuración
+        ln -sf /etc/nginx/sites-available/preview /etc/nginx/sites-enabled/
+        rm -f /etc/nginx/sites-enabled/default
+        nginx -t
+        systemctl restart nginx
+        
+        # 4. Verificar resolución DNS local
+        echo "Verificando DNS local:"
+        grep pr-${{ github.event.number }}.ionhack.ink /etc/hosts || echo "$(hostname -I | awk '{print \$1}') pr-${{ github.event.number }}.ionhack.ink" >> /etc/hosts
+        
+        # 5. Test de conectividad
+        echo "Resultado curl local:"
+        curl -H "Host: pr-${{ github.event.number }}.ionhack.ink" http://localhost || true
+        EOSSH
+
+    - name: Add Preview Comment
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `🚀 Preview disponible: https://pr-${{ github.event.number }}.ionhack.ink`
+          })
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Delete DNS Record
+      uses: scottrocha/remove-dns-record@v2
+      with:
+        name: "pr-${{ github.event.number }}.ionhack.ink"
+        token: ${{ secrets.CLOUDFLARE_TOKEN }}
+        zone: ${{ secrets.CLOUDFLARE_ZONE }}
+
+    - name: Delete Hetzner Instance
+      uses: jawher/action-hcloud@v1.50.0
+      env:
+        HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+      with:
+        args: server delete pr-${{ github.event.number }}-preview
