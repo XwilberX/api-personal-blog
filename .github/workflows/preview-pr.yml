@@ -1,0 +1,107 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create Hetzner Instance
+      uses: jawher/action-hcloud@v1.50.0
+      id: create-server
+      env:
+        HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+      with:
+        args: server create --location=fsn1 --image=ubuntu-22.04 --ssh-key=${{ secrets.HETZNER_SSH_KEY_NAME }} --type=cx11 --name=pr-${{ github.event.number }}-preview
+
+    - name: Get Server IP
+      uses: jawher/action-hcloud@v1.50.0
+      id: get-ip
+      env:
+        HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+      with:
+        args: server describe pr-${{ github.event.number }}-preview -o=json
+    - run: |
+        IP=$(jq -r '.public_net.ipv4.ip' hcloud.output)
+        echo "INSTANCE_IP=$IP" >> $GITHUB_ENV
+
+    - name: Create DNS Record
+      uses: rez0n/create-dns-record@v2.1
+      with:
+        type: "A"
+        name: "pr-${{ github.event.number }}.ionhack.ink"
+        content: ${{ env.INSTANCE_IP }}
+        ttl: 1
+        proxied: true
+        token: ${{ secrets.CLOUDFLARE_TOKEN }}
+        zone: ${{ secrets.CLOUDFLARE_ZONE }}
+
+    - name: Setup Python Environment
+      run: |
+        ssh -o StrictHostKeyChecking=no root@${{ env.INSTANCE_IP }} << 'EOF'
+        # Clona el repositorio
+        git clone https://github.com/${{ github.repository }}.git /app
+        cd /app
+        git checkout ${{ github.event.pull_request.head.ref }}
+        
+        # Instalar uv
+        apt-get update
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+
+        # Crear y configurar .env
+        JWT_SECRET=$(openssl rand -hex 32)
+        cat > .env <<EOL
+        TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
+        TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
+        API_VERSION=${{ secrets.API_VERSION }}
+        JWT_SECRET=$JWT_SECRET
+        JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
+        EOL
+
+        # Instalar dependencias
+        uv sync
+
+        # Activar entorno virtual
+        source .venv/bin/activate
+
+        # Correr migraciones
+        python -m alembic upgrade head
+
+        # Iniciar servidor
+        nohup python main.py > log.txt 2>&1 &
+        EOF
+
+    - name: Add Preview Comment
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `🚀 Preview disponible: https://pr-${{ github.event.number }}.ionhack.ink`
+          })
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Delete DNS Record
+      uses: scottrocha/remove-dns-record@v2
+      with:
+        name: "pr-${{ github.event.number }}.ionhack.ink"
+        token: ${{ secrets.CLOUDFLARE_TOKEN }}
+        zone: ${{ secrets.CLOUDFLARE_ZONE }}
+
+    - name: Delete Hetzner Instance
+      uses: jawher/action-hcloud@v1.50.0
+      env:
+        HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+      with:
+        args: server delete pr-${{ github.event.number }}-preview

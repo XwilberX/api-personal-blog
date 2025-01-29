@@ -1,0 +1,58 @@
+name: Run tests via pytest
+
+on:
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    name: "Run tests (Python ${{ matrix.python-version }})"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Create .env files
+        run: |
+          # Crear jwt_secret con openssl rand -hex 32
+          JWT_SECRET=$(openssl rand -hex 32)
+
+          # Archivo .env (servidor de pruebas)
+          echo "TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}" > .env
+          echo "TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}" >> .env
+          echo "API_VERSION=${{ secrets.API_VERSION }}" >> .env
+          echo "JWT_SECRET=$JWT_SECRET" >> .env
+          echo "JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}" >> .env
+          
+
+          # Archivo .env.test (testing)
+          echo "TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}" > .env.test
+          echo "TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}" >> .env.test
+          echo "API_VERSION=${{ secrets.API_VERSION }}" >> .env.test
+          echo "JWT_SECRET=$JWT_SECRET" >> .env.test
+          echo "JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}" >> .env.test
+
+      - name: Install dependencies
+        run: |
+          uv sync
+
+      - name: Run project localhost
+        run: |
+          nohup python main.py > server.log 2>&1 &
+          sleep 5  # Esperar a que el servidor esté listo
+
+      - name: Run tests
+        run: |
+          pytest -s -v
