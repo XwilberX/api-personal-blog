@@ -68,7 +68,7 @@ jobs:
         
         # Instalar uv con script oficial
         curl -LsSf https://astral.sh/uv/install.sh | sh
-        source "$HOME/.cargo/env"
+        source "$HOME/.local/bin/uv"
         
         # Clonar repositorio
         [ ! -d /app ] && git clone https://github.com/${{ github.repository }}.git /app
@@ -87,18 +87,18 @@ jobs:
         EOF
 
         # uv version
-        /root/.cargo/bin/uv --version
+        /root/.local/bin/uv --version
 
         # Usar ruta absoluta para uv
-        /root/.cargo/bin/uv sync
+        /root/.local/bin/uv sync
         
         # Migraciones
         source .venv/bin/activate
-        /root/.cargo/bin/uv run python -m alembic upgrade head
+        /root/.local/bin/uv run python -m alembic upgrade head
         
         # Iniciar aplicación
         pkill python || true
-        nohup /root/.cargo/bin/uv run python main.py > log.txt 2>&1 &
+        nohup /root/.local/bin/uv run python main.py > log.txt 2>&1 &
         EOSSH
 
     - name: Configure Nginx Proxy
