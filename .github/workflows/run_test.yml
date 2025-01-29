@@ -48,6 +48,10 @@ jobs:
         run: |
           uv sync
 
+      - name: Activate virtual environment
+        run: |
+          source .venv/bin/activate
+
       - name: Run project localhost
         run: |
           nohup python main.py > server.log 2>&1 &
