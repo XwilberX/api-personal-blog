@@ -23,6 +23,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "faker>=35.0.0",
     "pre-commit>=4.1.0",
     "pytest>=8.3.4",
 ]
