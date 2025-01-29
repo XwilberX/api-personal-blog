@@ -72,10 +72,19 @@ def get_by_pk(request: Request) -> BlogResponse:
     "/create", openapi_name="Create blog", openapi_tags=["Blogs"], auth_required=True
 )
 def create(request: Request, body: BlogCreate) -> BlogResponse:
+    blog = None
+
     with get_connection() as db:
         body = orjson.loads(request.body)
         service = BlogService(db)
         blog = service.add(body)
+
+    if not blog:
+        return BlogResponse(
+            status="error",
+            status_code=status_codes.HTTP_400_BAD_REQUEST,
+            data=None,
+        )
 
     return BlogResponse(
         status="success",

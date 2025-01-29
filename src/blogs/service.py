@@ -19,7 +19,10 @@ class BlogService:
         author = blog.pop("author")
         blog["author_id"] = uuid.UUID(author["pk"])
         blog = Blog(**blog)
-        return self.repository.add(blog)
+
+        blog_created = self.repository.add(blog)
+
+        return blog_created
 
     def get(self, pk: str) -> Optional[Blog]:
         pk = uuid.UUID(pk)

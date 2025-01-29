@@ -6,6 +6,7 @@ from robyn.exceptions import HTTPException
 
 # Project imports
 from src.auth.router import router as auth_router
+from src.auth.router import router_user as auth_router_user
 from src.blogs.router import router as blogs_router
 
 
@@ -28,6 +29,7 @@ async def h(request):
 
 app.include_router(router=auth_router)
 app.include_router(router=blogs_router)
+app.include_router(router=auth_router_user)
 
 
 if __name__ == "__main__":

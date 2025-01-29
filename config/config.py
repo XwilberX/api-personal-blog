@@ -41,8 +41,8 @@ class Settings(BaseSettings):
 
 
 @lru_cache
-def get_settings() -> Settings:
-    return Settings()
+def get_settings(env_file: str | None = None) -> Settings:
+    return Settings(_env_file=env_file) if env_file else Settings()
 
 
 settings = get_settings()
