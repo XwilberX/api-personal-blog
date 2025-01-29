@@ -63,10 +63,7 @@ jobs:
         
         # Instalar dependencias base
         apt-get update -qq
-        apt-get install -qqy git python3 python3-venv python3-pip curl
-
-        # Asegurar pip actualizado
-        python3 -m ensurepip --upgrade
+        apt-get install -qqy git python3 python3-venv curl
         
         # Clonar repositorio
         [ ! -d /app ] && git clone https://github.com/${{ github.repository }}.git /app
@@ -74,8 +71,15 @@ jobs:
         git fetch origin ${{ github.event.pull_request.head.ref }}
         git checkout ${{ github.event.pull_request.head.ref }} -f
         
-        # Instalar uv con pip
-        python3 -m pip install --user uv
+        # Instalar pipx
+        apt-get install -qqy pipx
+        pipx ensurepath
+        echo 'export PATH="$PATH:/root/.local/bin"' >> ~/.bashrc
+        source ~/.bashrc
+
+        # Instalar uv con pipx
+        pipx install uv
+        uv version
         
         # Configurar entorno
         JWT_SECRET=$(openssl rand -hex 32)
@@ -88,9 +92,7 @@ jobs:
         EOF
         
         # Instalar dependencias
-        uv venv
-        source .venv/bin/activate
-        uv pip install -r requirements.txt
+        uv sync
         
         # Migraciones
         uv run python -m alembic upgrade head
